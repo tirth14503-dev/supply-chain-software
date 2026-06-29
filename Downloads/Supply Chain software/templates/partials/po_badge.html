@@ -1,0 +1,6 @@
+{% if status == 'draft' %}<span class="badge bg-secondary">Draft</span>
+{% elif status == 'sent' %}<span class="badge bg-info text-dark">Sent</span>
+{% elif status == 'confirmed' %}<span class="badge bg-primary">Confirmed</span>
+{% elif status == 'received' %}<span class="badge bg-success">Received</span>
+{% elif status == 'cancelled' %}<span class="badge bg-danger">Cancelled</span>
+{% endif %}

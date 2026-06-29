@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Shipments{% endblock %}
+{% block page_title %}Shipments{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <div class="section-header mb-3">
+      <h5>Shipments</h5>
+      <a href="{% url 'shipment_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>New Shipment</a>
+    </div>
+    <form class="row g-2 mb-3" method="get">
+      <div class="col-md-4"><input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search tracking # or carrier…"></div>
+      <div class="col-md-2">
+        <select name="type" class="form-select form-select-sm">
+          <option value="">All Types</option>
+          <option value="inbound" {% if stype == 'inbound' %}selected{% endif %}>Inbound</option>
+          <option value="outbound" {% if stype == 'outbound' %}selected{% endif %}>Outbound</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select name="status" class="form-select form-select-sm">
+          <option value="">All Statuses</option>
+          <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="in_transit" {% if status == 'in_transit' %}selected{% endif %}>In Transit</option>
+          <option value="out_for_delivery" {% if status == 'out_for_delivery' %}selected{% endif %}>Out for Delivery</option>
+          <option value="delivered" {% if status == 'delivered' %}selected{% endif %}>Delivered</option>
+          <option value="returned" {% if status == 'returned' %}selected{% endif %}>Returned</option>
+          <option value="lost" {% if status == 'lost' %}selected{% endif %}>Lost</option>
+        </select>
+      </div>
+      <div class="col-auto"><button class="btn btn-sm btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button></div>
+      {% if q or status or stype %}<div class="col-auto"><a href="{% url 'shipment_list' %}" class="btn btn-sm btn-outline-danger">Clear</a></div>{% endif %}
+    </form>
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead><tr><th>Tracking #</th><th>Type</th><th>Carrier</th><th>Origin</th><th>Destination</th><th>Ship Date</th><th>Est. Delivery</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for s in shipments %}
+          <tr>
+            <td><a href="{% url 'shipment_detail' s.pk %}" class="fw-medium text-decoration-none">{{ s.tracking_number }}</a></td>
+            <td><span class="badge {% if s.shipment_type == 'inbound' %}bg-info text-dark{% else %}bg-purple{% endif %}">{{ s.get_shipment_type_display }}</span></td>
+            <td>{{ s.carrier }}</td>
+            <td class="text-muted small">{{ s.origin|truncatechars:30 }}</td>
+            <td class="text-muted small">{{ s.destination|truncatechars:30 }}</td>
+            <td>{{ s.ship_date|date:"d M Y"|default:"—" }}</td>
+            <td>{{ s.estimated_delivery|date:"d M Y"|default:"—" }}</td>
+            <td>{% include "partials/shipment_badge.html" with status=s.status %}</td>
+            <td><a href="{% url 'shipment_detail' s.pk %}" class="btn btn-sm btn-outline-secondary py-0">View</a></td>
+          </tr>
+          {% empty %}<tr><td colspan="9" class="text-center text-muted py-4">No shipments found.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

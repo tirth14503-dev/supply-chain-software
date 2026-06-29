@@ -1,0 +1,2 @@
+web: gunicorn supply_chain.wsgi --log-file -
+release: python manage.py migrate --noinput

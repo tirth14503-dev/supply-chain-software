@@ -1,0 +1,7 @@
+{% if status == 'pending' %}<span class="badge bg-secondary">Pending</span>
+{% elif status == 'in_transit' %}<span class="badge bg-primary">In Transit</span>
+{% elif status == 'out_for_delivery' %}<span class="badge bg-info text-dark">Out for Delivery</span>
+{% elif status == 'delivered' %}<span class="badge bg-success">Delivered</span>
+{% elif status == 'returned' %}<span class="badge bg-warning text-dark">Returned</span>
+{% elif status == 'lost' %}<span class="badge bg-danger">Lost</span>
+{% endif %}

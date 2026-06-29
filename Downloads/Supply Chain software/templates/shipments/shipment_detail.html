@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ shipment.tracking_number }}{% endblock %}
+{% block page_title %}Shipment Detail{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div>
+            <h5 class="fw-bold mb-0">{{ shipment.tracking_number }}</h5>
+            <span class="badge {% if shipment.shipment_type == 'inbound' %}bg-info text-dark{% else %}bg-primary{% endif %} mt-1">{{ shipment.get_shipment_type_display }}</span>
+          </div>
+          {% include "partials/shipment_badge.html" with status=shipment.status %}
+        </div>
+        <table class="table table-sm table-borderless mb-0">
+          <tr><th class="text-muted fw-normal">Carrier</th><td>{{ shipment.carrier }}</td></tr>
+          <tr><th class="text-muted fw-normal">Origin</th><td>{{ shipment.origin }}</td></tr>
+          <tr><th class="text-muted fw-normal">Destination</th><td>{{ shipment.destination }}</td></tr>
+          <tr><th class="text-muted fw-normal">Ship Date</th><td>{{ shipment.ship_date|date:"d M Y"|default:"—" }}</td></tr>
+          <tr><th class="text-muted fw-normal">Est. Delivery</th><td>{{ shipment.estimated_delivery|date:"d M Y"|default:"—" }}</td></tr>
+          <tr><th class="text-muted fw-normal">Actual Delivery</th><td>{{ shipment.actual_delivery|date:"d M Y"|default:"—" }}</td></tr>
+          <tr><th class="text-muted fw-normal">Weight</th><td>{% if shipment.weight_kg %}{{ shipment.weight_kg }} kg{% else %}—{% endif %}</td></tr>
+          {% if shipment.sales_order %}<tr><th class="text-muted fw-normal">Sales Order</th><td><a href="{% url 'so_detail' shipment.sales_order.pk %}">{{ shipment.sales_order.so_number }}</a></td></tr>{% endif %}
+          {% if shipment.purchase_order %}<tr><th class="text-muted fw-normal">Purchase Order</th><td><a href="{% url 'po_detail' shipment.purchase_order.pk %}">{{ shipment.purchase_order.po_number }}</a></td></tr>{% endif %}
+        </table>
+        {% if shipment.notes %}<hr><p class="small text-muted mb-0">{{ shipment.notes }}</p>{% endif %}
+        <hr>
+        <form method="post" action="{% url 'shipment_update_status' shipment.pk %}">
+          {% csrf_token %}
+          <label class="form-label small fw-semibold">Update Status</label>
+          <div class="d-flex gap-2">
+            <select name="status" class="form-select form-select-sm">
+              <option value="pending" {% if shipment.status == 'pending' %}selected{% endif %}>Pending</option>
+              <option value="in_transit" {% if shipment.status == 'in_transit' %}selected{% endif %}>In Transit</option>
+              <option value="out_for_delivery" {% if shipment.status == 'out_for_delivery' %}selected{% endif %}>Out for Delivery</option>
+              <option value="delivered" {% if shipment.status == 'delivered' %}selected{% endif %}>Delivered</option>
+              <option value="returned" {% if shipment.status == 'returned' %}selected{% endif %}>Returned</option>
+              <option value="lost" {% if shipment.status == 'lost' %}selected{% endif %}>Lost</option>
+            </select>
+            <button class="btn btn-sm btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-semibold mb-3"><i class="bi bi-clock-history me-1"></i>Tracking Timeline</h6>
+        <div class="timeline">
+          {% with statuses="pending,in_transit,out_for_delivery,delivered" %}
+          {% for step in "pending,in_transit,out_for_delivery,delivered"|split:"," %}
+          {% endfor %}
+          {% endwith %}
+          <div class="d-flex flex-column gap-3">
+            {% for step, label, icon in "pending:Order Created:bi-box,in_transit:In Transit:bi-truck,out_for_delivery:Out for Delivery:bi-house-door,delivered:Delivered:bi-check-circle"|split:"," %}
+            {% endfor %}
+            <div class="d-flex gap-3 align-items-start">
+              <div class="rounded-circle d-flex align-items-center justify-content-center {% if shipment.status == 'pending' or shipment.status == 'in_transit' or shipment.status == 'out_for_delivery' or shipment.status == 'delivered' %}bg-primary text-white{% else %}bg-light text-muted{% endif %}" style="width:36px;height:36px;flex-shrink:0;"><i class="bi bi-box"></i></div>
+              <div><div class="fw-medium small">Order Created</div><div class="text-muted" style="font-size:.78rem">{{ shipment.created_at|date:"d M Y H:i" }}</div></div>
+            </div>
+            <div class="d-flex gap-3 align-items-start">
+              <div class="rounded-circle d-flex align-items-center justify-content-center {% if shipment.status == 'in_transit' or shipment.status == 'out_for_delivery' or shipment.status == 'delivered' %}bg-primary text-white{% else %}bg-light text-muted{% endif %}" style="width:36px;height:36px;flex-shrink:0;"><i class="bi bi-truck"></i></div>
+              <div><div class="fw-medium small">In Transit</div><div class="text-muted" style="font-size:.78rem">{% if shipment.ship_date %}{{ shipment.ship_date|date:"d M Y" }}{% else %}Awaiting shipment{% endif %}</div></div>
+            </div>
+            <div class="d-flex gap-3 align-items-start">
+              <div class="rounded-circle d-flex align-items-center justify-content-center {% if shipment.status == 'out_for_delivery' or shipment.status == 'delivered' %}bg-primary text-white{% else %}bg-light text-muted{% endif %}" style="width:36px;height:36px;flex-shrink:0;"><i class="bi bi-house-door"></i></div>
+              <div><div class="fw-medium small">Out for Delivery</div><div class="text-muted" style="font-size:.78rem">{% if shipment.estimated_delivery %}Est. {{ shipment.estimated_delivery|date:"d M Y" }}{% else %}Pending{% endif %}</div></div>
+            </div>
+            <div class="d-flex gap-3 align-items-start">
+              <div class="rounded-circle d-flex align-items-center justify-content-center {% if shipment.status == 'delivered' %}bg-success text-white{% else %}bg-light text-muted{% endif %}" style="width:36px;height:36px;flex-shrink:0;"><i class="bi bi-check-circle"></i></div>
+              <div><div class="fw-medium small">Delivered</div><div class="text-muted" style="font-size:.78rem">{% if shipment.actual_delivery %}{{ shipment.actual_delivery|date:"d M Y" }}{% else %}Pending{% endif %}</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

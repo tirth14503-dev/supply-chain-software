@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Adjust Stock – {{ product.name }}{% endblock %}
+{% block page_title %}Adjust Stock{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-5">
+<div class="card"><div class="card-body">
+  <h5 class="fw-semibold mb-1">Adjust Stock</h5>
+  <p class="text-muted small mb-4">{{ product.name }} (<code>{{ product.sku }}</code>)</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label">Warehouse <span class="text-danger">*</span></label>
+      <select name="warehouse" class="form-select" required>
+        <option value="">Select warehouse…</option>
+        {% for w in warehouses %}<option value="{{ w.pk }}">{{ w.name }} – {{ w.location }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Quantity <span class="text-danger">*</span></label>
+      <input type="number" name="quantity" class="form-control" min="0" required>
+      <div class="form-text">Sets the absolute stock level at this warehouse.</div>
+    </div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Update Stock</button>
+      <a href="{% url 'product_detail' product.pk %}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div></div>
+</div></div>
+{% endblock %}

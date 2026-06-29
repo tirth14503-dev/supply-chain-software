@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} Warehouse{% endblock %}
+{% block page_title %}{{ action }} Warehouse{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-6">
+<div class="card"><div class="card-body">
+  <h5 class="fw-semibold mb-4">{{ action }} Warehouse</h5>
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label">Name <span class="text-danger">*</span></label>
+      <input type="text" name="name" value="{{ warehouse.name|default:'' }}" class="form-control" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Location <span class="text-danger">*</span></label>
+      <input type="text" name="location" value="{{ warehouse.location|default:'' }}" class="form-control" required>
+    </div>
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label class="form-label">Capacity (units)</label>
+        <input type="number" name="capacity" value="{{ warehouse.capacity|default:'0' }}" class="form-control">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Manager</label>
+        <input type="text" name="manager" value="{{ warehouse.manager|default:'' }}" class="form-control">
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">{{ action }} Warehouse</button>
+      <a href="{% url 'warehouse_list' %}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div></div>
+</div></div>
+{% endblock %}

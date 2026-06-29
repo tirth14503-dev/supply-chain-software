@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Products{% endblock %}
+{% block page_title %}Products{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <div class="section-header mb-3">
+      <h5>Product Catalog</h5>
+      <a href="{% url 'product_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Add Product</a>
+    </div>
+    <form class="row g-2 mb-3" method="get">
+      <div class="col-md-5">
+        <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search by name or SKU…">
+      </div>
+      <div class="col-md-4">
+        <select name="category" class="form-select form-select-sm">
+          <option value="">All Categories</option>
+          {% for cat in categories %}<option value="{{ cat.pk }}" {% if category_id == cat.pk|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-auto"><button class="btn btn-sm btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button></div>
+      {% if q or category_id %}<div class="col-auto"><a href="{% url 'product_list' %}" class="btn btn-sm btn-outline-danger">Clear</a></div>{% endif %}
+    </form>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead><tr><th>SKU</th><th>Name</th><th>Category</th><th>Unit Price</th><th>Total Stock</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for p in products %}
+          <tr>
+            <td><code>{{ p.sku }}</code></td>
+            <td><a href="{% url 'product_detail' p.pk %}" class="fw-medium text-decoration-none">{{ p.name }}</a></td>
+            <td>{{ p.category.name|default:"—" }}</td>
+            <td>${{ p.unit_price }}</td>
+            <td>{{ p.total_stock }} {{ p.unit }}</td>
+            <td>{% if p.is_low_stock %}<span class="badge bg-danger">Low Stock</span>{% else %}<span class="badge bg-success">OK</span>{% endif %}</td>
+            <td class="text-end">
+              <a href="{% url 'product_edit' p.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'product_delete' p.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+            </td>
+          </tr>
+          {% empty %}<tr><td colspan="7" class="text-center text-muted py-4">No products found.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Suppliers{% endblock %}
+{% block page_title %}Suppliers{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <div class="section-header mb-3">
+      <h5>Suppliers</h5>
+      <a href="{% url 'supplier_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Add Supplier</a>
+    </div>
+    <form class="row g-2 mb-3" method="get">
+      <div class="col-md-5"><input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search name, email, country…"></div>
+      <div class="col-md-3">
+        <select name="status" class="form-select form-select-sm">
+          <option value="">All Statuses</option>
+          <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+          <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+          <option value="blacklisted" {% if status == 'blacklisted' %}selected{% endif %}>Blacklisted</option>
+        </select>
+      </div>
+      <div class="col-auto"><button class="btn btn-sm btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button></div>
+      {% if q or status %}<div class="col-auto"><a href="{% url 'supplier_list' %}" class="btn btn-sm btn-outline-danger">Clear</a></div>{% endif %}
+    </form>
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead><tr><th>Name</th><th>Contact</th><th>Country</th><th>Lead Time</th><th>Rating</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for s in suppliers %}
+          <tr>
+            <td><a href="{% url 'supplier_detail' s.pk %}" class="fw-medium text-decoration-none">{{ s.name }}</a></td>
+            <td>
+              {% if s.contact_person %}<div class="small">{{ s.contact_person }}</div>{% endif %}
+              {% if s.email %}<div class="small text-muted">{{ s.email }}</div>{% endif %}
+            </td>
+            <td>{{ s.country|default:"—" }}</td>
+            <td>{{ s.lead_time_days }}d</td>
+            <td>
+              <span class="text-warning">{% for i in "12345" %}{% if forloop.counter <= s.rating|floatformat:"0"|add:"0" %}★{% else %}☆{% endif %}{% endfor %}</span>
+              <span class="text-muted small">({{ s.rating }})</span>
+            </td>
+            <td>
+              {% if s.status == 'active' %}<span class="badge bg-success">Active</span>
+              {% elif s.status == 'inactive' %}<span class="badge bg-secondary">Inactive</span>
+              {% else %}<span class="badge bg-danger">Blacklisted</span>{% endif %}
+            </td>
+            <td class="text-end">
+              <a href="{% url 'supplier_edit' s.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'supplier_delete' s.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+            </td>
+          </tr>
+          {% empty %}<tr><td colspan="7" class="text-center text-muted py-4">No suppliers found.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

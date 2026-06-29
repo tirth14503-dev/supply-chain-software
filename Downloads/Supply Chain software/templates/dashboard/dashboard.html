@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – SupplyChain Pro{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4 col-lg-2-4">
+    <div class="stat-card" style="background:linear-gradient(135deg,#4e9af1,#3b7ed4);">
+      <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
+      <div class="stat-value">{{ total_products }}</div>
+      <div class="stat-label">Total Products</div>
+    </div>
+  </div>
+  <div class="col-md-4 col-lg-2-4">
+    <div class="stat-card" style="background:linear-gradient(135deg,#10b981,#059669);">
+      <div class="stat-icon"><i class="bi bi-people"></i></div>
+      <div class="stat-value">{{ total_suppliers }}</div>
+      <div class="stat-label">Active Suppliers</div>
+    </div>
+  </div>
+  <div class="col-md-4 col-lg-2-4">
+    <div class="stat-card" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
+      <div class="stat-icon"><i class="bi bi-cart3"></i></div>
+      <div class="stat-value">{{ pending_po }}</div>
+      <div class="stat-label">Open Purchase Orders</div>
+    </div>
+  </div>
+  <div class="col-md-4 col-lg-2-4">
+    <div class="stat-card" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);">
+      <div class="stat-icon"><i class="bi bi-bag-check"></i></div>
+      <div class="stat-value">{{ pending_so }}</div>
+      <div class="stat-label">Active Sales Orders</div>
+    </div>
+  </div>
+  <div class="col-md-4 col-lg-2-4">
+    <div class="stat-card" style="background:linear-gradient(135deg,#ef4444,#dc2626);">
+      <div class="stat-icon"><i class="bi bi-truck"></i></div>
+      <div class="stat-value">{{ in_transit }}</div>
+      <div class="stat-label">Shipments In Transit</div>
+    </div>
+  </div>
+</div>
+
+<style>.col-lg-2-4 { flex: 0 0 auto; width: 20%; } @media(max-width:991px){.col-lg-2-4{width:50%;}}</style>
+
+<div class="row g-3 mb-4">
+  <!-- Sales Order Status Chart -->
+  <div class="col-md-5">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6 class="fw-semibold mb-3">Sales Order Status</h6>
+        <canvas id="soChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Low Stock Alert -->
+  <div class="col-md-7">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="section-header">
+          <h6 class="fw-semibold mb-0"><i class="bi bi-exclamation-triangle text-warning me-1"></i>Low Stock Alerts</h6>
+          <a href="{% url 'product_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+        {% if low_stock_products %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead><tr><th>SKU</th><th>Product</th><th>Stock</th><th>Reorder At</th><th></th></tr></thead>
+              <tbody>
+                {% for p in low_stock_products|slice:":8" %}
+                <tr>
+                  <td><code>{{ p.sku }}</code></td>
+                  <td>{{ p.name }}</td>
+                  <td><span class="badge bg-danger">{{ p.total_stock }}</span></td>
+                  <td>{{ p.reorder_point }}</td>
+                  <td><a href="{% url 'product_detail' p.pk %}" class="btn btn-sm btn-outline-secondary py-0">View</a></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-center text-muted py-4"><i class="bi bi-check-circle fs-3 text-success"></i><p class="mt-2 mb-0">All products are well-stocked</p></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Recent Purchase Orders -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="section-header">
+          <h6 class="fw-semibold mb-0">Recent Purchase Orders</h6>
+          <a href="{% url 'po_list' %}" class="btn btn-sm btn-outline-primary">All</a>
+        </div>
+        {% for o in recent_po %}
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <div>
+            <div class="fw-medium small">{{ o.po_number }}</div>
+            <div class="text-muted" style="font-size:.78rem">{{ o.supplier.name }}</div>
+          </div>
+          {% include "partials/po_badge.html" with status=o.status %}
+        </div>
+        {% empty %}<p class="text-muted small mt-2">No orders yet</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Sales Orders -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="section-header">
+          <h6 class="fw-semibold mb-0">Recent Sales Orders</h6>
+          <a href="{% url 'so_list' %}" class="btn btn-sm btn-outline-primary">All</a>
+        </div>
+        {% for o in recent_so %}
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <div>
+            <div class="fw-medium small">{{ o.so_number }}</div>
+            <div class="text-muted" style="font-size:.78rem">{{ o.customer_name }}</div>
+          </div>
+          {% include "partials/so_badge.html" with status=o.status %}
+        </div>
+        {% empty %}<p class="text-muted small mt-2">No orders yet</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Shipments -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="section-header">
+          <h6 class="fw-semibold mb-0">Recent Shipments</h6>
+          <a href="{% url 'shipment_list' %}" class="btn btn-sm btn-outline-primary">All</a>
+        </div>
+        {% for s in recent_shipments %}
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <div>
+            <div class="fw-medium small">{{ s.tracking_number }}</div>
+            <div class="text-muted" style="font-size:.78rem">{{ s.carrier }} · {{ s.get_shipment_type_display }}</div>
+          </div>
+          {% include "partials/shipment_badge.html" with status=s.status %}
+        </div>
+        {% empty %}<p class="text-muted small mt-2">No shipments yet</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const soLabels = {{ so_labels|safe }};
+const soCounts = {{ so_counts|safe }};
+if (soLabels.length) {
+  new Chart(document.getElementById('soChart'), {
+    type: 'doughnut',
+    data: {
+      labels: soLabels,
+      datasets: [{ data: soCounts, backgroundColor: ['#4e9af1','#10b981','#f59e0b','#8b5cf6','#ef4444'] }]
+    },
+    options: { plugins: { legend: { position: 'bottom' } }, cutout: '60%' }
+  });
+} else {
+  document.getElementById('soChart').parentElement.innerHTML = '<p class="text-muted text-center py-4">No sales orders yet</p>';
+}
+</script>
+{% endblock %}
