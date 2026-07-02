@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Demand Forecast – AI{% endblock %}
+{% block page_title %}Demand Forecast{% endblock %}
+
+{% block content %}
+<p class="text-muted mb-4">6-month sales trend analysis with next-month demand prediction for every product.</p>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="mb-3"><i class="bi bi-bar-chart-line me-2 text-primary"></i>Forecast vs Current Stock</h5>
+    <canvas id="forecastChart" height="80"></canvas>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Current Stock</th>
+          <th>Avg Monthly Sales</th>
+          <th>Trend</th>
+          <th>Next Month Forecast</th>
+          <th>Stock Coverage</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for f in forecasts %}
+      <tr>
+        <td><strong>{{ f.product.name }}</strong><br><small class="text-muted">{{ f.product.sku }}</small></td>
+        <td>{{ f.current_stock }}</td>
+        <td>{{ f.avg_monthly }}</td>
+        <td>
+          {% if f.trend_pct > 10 %}
+            <span class="text-success"><i class="bi bi-arrow-up-right"></i> +{{ f.trend_pct }}%</span>
+          {% elif f.trend_pct < -10 %}
+            <span class="text-danger"><i class="bi bi-arrow-down-right"></i> {{ f.trend_pct }}%</span>
+          {% else %}
+            <span class="text-muted"><i class="bi bi-dash"></i> {{ f.trend_pct }}%</span>
+          {% endif %}
+        </td>
+        <td><strong>{{ f.forecast_next_month }}</strong> units</td>
+        <td>
+          {% if f.stock_coverage_months < 1 %}
+            <span class="badge bg-danger">{{ f.stock_coverage_months }} mo</span>
+          {% elif f.stock_coverage_months < 2 %}
+            <span class="badge bg-warning text-dark">{{ f.stock_coverage_months }} mo</span>
+          {% else %}
+            <span class="badge bg-success">{{ f.stock_coverage_months }} mo</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if f.current_stock < f.forecast_next_month %}
+            <span class="badge bg-danger">Stock shortage risk</span>
+          {% elif f.stock_coverage_months < 1.5 %}
+            <span class="badge bg-warning text-dark">Reorder soon</span>
+          {% else %}
+            <span class="badge bg-success">Sufficient</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const labels = {{ chart_labels|safe }};
+const forecastData = {{ chart_forecast|safe }};
+const stockData = {{ chart_stock|safe }};
+new Chart(document.getElementById('forecastChart'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      { label: 'Forecasted Demand (next month)', data: forecastData,
+        backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 4 },
+      { label: 'Current Stock', data: stockData,
+        backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 4 },
+    ]
+  },
+  options: { responsive: true, plugins: { legend: { position: 'top' } },
+    scales: { y: { beginAtZero: true } } }
+});
+</script>
+{% endblock %}

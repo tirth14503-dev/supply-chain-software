@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Smart Reorder – AI{% endblock %}
+{% block page_title %}Smart Reorder Alerts{% endblock %}
+
+{% block content %}
+<p class="text-muted mb-4">AI calculates days-until-stockout based on your actual sales velocity and recommends optimal reorder quantities.</p>
+
+{% if alerts %}
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="card text-center p-3">
+      <div class="fs-2 fw-bold text-danger">{{ alerts|length }}</div>
+      <div class="text-muted small">Products Need Reorder</div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card text-center p-3">
+      <div class="fs-2 fw-bold text-warning">
+        {% for a in alerts %}{% if a.urgency == 'Critical' or a.urgency == 'High' %}1{% endif %}{% endfor %}</div>
+      <div class="text-muted small">Critical / High Urgency</div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card text-center p-3">
+      <div class="fs-2 fw-bold text-primary">
+        {% for a in alerts %}{{ a.recommended_qty }}{% if not forloop.last %}+{% endif %}{% endfor %}</div>
+      <div class="text-muted small">Total Units to Order</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Current Stock</th>
+          <th>Reorder Point</th>
+          <th>Avg Daily Sales</th>
+          <th>Days Until Stockout</th>
+          <th>Recommended Order Qty</th>
+          <th>Urgency</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for a in alerts %}
+      <tr class="{% if a.urgency == 'Critical' %}table-danger{% elif a.urgency == 'High' %}table-warning{% endif %}">
+        <td>
+          <strong>{{ a.product.name }}</strong><br>
+          <small class="text-muted">{{ a.product.sku }}</small>
+        </td>
+        <td>
+          <span class="fw-bold {% if a.current_stock == 0 %}text-danger{% endif %}">
+            {{ a.current_stock }}
+          </span>
+        </td>
+        <td>{{ a.reorder_point }}</td>
+        <td>{{ a.avg_daily_sales }} units/day</td>
+        <td>
+          {% if a.days_until_stockout >= 999 %}
+            <span class="text-muted">No recent sales</span>
+          {% elif a.days_until_stockout <= 3 %}
+            <span class="text-danger fw-bold">{{ a.days_until_stockout }} days</span>
+          {% else %}
+            {{ a.days_until_stockout }} days
+          {% endif %}
+        </td>
+        <td><span class="badge bg-primary fs-6">{{ a.recommended_qty }} units</span></td>
+        <td>
+          {% if a.urgency == 'Critical' %}
+            <span class="badge bg-danger">Critical</span>
+          {% elif a.urgency == 'High' %}
+            <span class="badge bg-warning text-dark">High</span>
+          {% else %}
+            <span class="badge bg-secondary">Medium</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5">
+    <i class="bi bi-check-circle text-success" style="font-size:3rem"></i>
+    <h5 class="mt-3">All Stock Levels Healthy</h5>
+    <p class="text-muted">No products require reordering at this time.</p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -80,6 +80,26 @@
     <a href="{% url 'shipment_list' %}" class="nav-link {% if 'shipment' in request.resolver_match.url_name %}active{% endif %}">
       <i class="bi bi-truck"></i> Shipments
     </a>
+
+    <div class="nav-section mt-2" style="color:#a78bfa">AI Insights</div>
+    <a href="{% url 'ai_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'ai_dashboard' %}active{% endif %}">
+      <i class="bi bi-robot"></i> AI Overview
+    </a>
+    <a href="{% url 'ai_demand_forecast' %}" class="nav-link {% if request.resolver_match.url_name == 'ai_demand_forecast' %}active{% endif %}">
+      <i class="bi bi-graph-up"></i> Demand Forecast
+    </a>
+    <a href="{% url 'ai_smart_reorder' %}" class="nav-link {% if request.resolver_match.url_name == 'ai_smart_reorder' %}active{% endif %}">
+      <i class="bi bi-arrow-repeat"></i> Smart Reorder
+    </a>
+    <a href="{% url 'ai_supplier_risk' %}" class="nav-link {% if request.resolver_match.url_name == 'ai_supplier_risk' %}active{% endif %}">
+      <i class="bi bi-shield-exclamation"></i> Supplier Risk
+    </a>
+    <a href="{% url 'ai_anomaly_detection' %}" class="nav-link {% if request.resolver_match.url_name == 'ai_anomaly_detection' %}active{% endif %}">
+      <i class="bi bi-graph-up-arrow"></i> Anomaly Detection
+    </a>
+    <a href="{% url 'ai_delay_predictor' %}" class="nav-link {% if request.resolver_match.url_name == 'ai_delay_predictor' %}active{% endif %}">
+      <i class="bi bi-clock-history"></i> Delay Predictor
+    </a>
   </nav>
 </div>
 

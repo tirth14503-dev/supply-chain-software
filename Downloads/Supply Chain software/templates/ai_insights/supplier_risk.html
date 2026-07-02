@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Supplier Risk – AI{% endblock %}
+{% block page_title %}Supplier Risk Scoring{% endblock %}
+
+{% block content %}
+<p class="text-muted mb-4">AI scores each supplier 0–100 based on status, rating, lead time, and PO cancellation rate.</p>
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="card text-center p-3">
+      <div class="fs-2 fw-bold text-success">{{ risk_counts.Low }}</div>
+      <div class="text-muted small">Low Risk Suppliers</div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card text-center p-3">
+      <div class="fs-2 fw-bold text-warning">{{ risk_counts.Medium }}</div>
+      <div class="text-muted small">Medium Risk Suppliers</div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card text-center p-3">
+      <div class="fs-2 fw-bold text-danger">{{ risk_counts.High }}</div>
+      <div class="text-muted small">High Risk Suppliers</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="mb-3">Risk Distribution</h6>
+        <canvas id="riskChart"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <table class="table">
+          <thead>
+            <tr><th>Supplier</th><th>Score</th><th>Risk Level</th><th>Lead Time</th><th>Rating</th><th>Risk Factors</th></tr>
+          </thead>
+          <tbody>
+          {% for r in risks %}
+          <tr>
+            <td>
+              <strong>{{ r.supplier.name }}</strong><br>
+              <small class="text-muted">{{ r.supplier.country }}</small>
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="progress flex-grow-1" style="height:6px">
+                  <div class="progress-bar {% if r.score >= 75 %}bg-success{% elif r.score >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                       style="width:{{ r.score }}%"></div>
+                </div>
+                <span class="fw-bold">{{ r.score }}</span>
+              </div>
+            </td>
+            <td>
+              {% if r.risk_level == 'High' %}<span class="badge bg-danger">High</span>
+              {% elif r.risk_level == 'Medium' %}<span class="badge bg-warning text-dark">Medium</span>
+              {% else %}<span class="badge bg-success">Low</span>{% endif %}
+            </td>
+            <td>{{ r.supplier.lead_time_days }}d</td>
+            <td>
+              {% for i in "12345" %}
+                {% if forloop.counter <= r.supplier.rating %}
+                  <i class="bi bi-star-fill text-warning" style="font-size:.75rem"></i>
+                {% else %}
+                  <i class="bi bi-star text-muted" style="font-size:.75rem"></i>
+                {% endif %}
+              {% endfor %}
+            </td>
+            <td>
+              {% if r.risk_factors %}
+                {% for f in r.risk_factors %}
+                  <span class="badge bg-light text-dark border me-1 mb-1">{{ f }}</span>
+                {% endfor %}
+              {% else %}
+                <span class="text-muted small">None</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+new Chart(document.getElementById('riskChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Low Risk', 'Medium Risk', 'High Risk'],
+    datasets: [{ data: {{ chart_data|safe }},
+      backgroundColor: ['#22c55e','#f59e0b','#ef4444'],
+      borderWidth: 0 }]
+  },
+  options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+});
+</script>
+{% endblock %}

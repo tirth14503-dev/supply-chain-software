@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'suppliers',
     'orders',
     'shipments',
+    'ai_insights',
 ]
 
 MIDDLEWARE = [

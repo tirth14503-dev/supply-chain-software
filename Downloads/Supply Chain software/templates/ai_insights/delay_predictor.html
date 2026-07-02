@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Delay Predictor – AI{% endblock %}
+{% block page_title %}Shipment Delay Predictor{% endblock %}
+
+{% block content %}
+<p class="text-muted mb-4">Monitors in-transit shipments and flags those that are overdue or at risk of missing their delivery date.</p>
+
+{% if risks %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="mb-3"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>At-Risk Shipments</h5>
+    <table class="table">
+      <thead>
+        <tr><th>Tracking #</th><th>Type</th><th>Carrier</th><th>Route</th><th>Est. Delivery</th><th>Status</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+      {% for d in risks %}
+      <tr class="{% if d.severity == 'High' %}table-danger{% else %}table-warning{% endif %}">
+        <td><strong>{{ d.shipment.tracking_number }}</strong></td>
+        <td>
+          {% if d.shipment.shipment_type == 'inbound' %}
+            <span class="badge bg-info">Inbound</span>
+          {% else %}
+            <span class="badge bg-primary">Outbound</span>
+          {% endif %}
+        </td>
+        <td>{{ d.shipment.carrier }}</td>
+        <td class="small">{{ d.shipment.origin }} → {{ d.shipment.destination }}</td>
+        <td>{{ d.shipment.estimated_delivery }}</td>
+        <td>
+          {% if d.days_overdue > 0 %}
+            <span class="badge bg-danger">{{ d.days_overdue }} day{{ d.days_overdue|pluralize }} overdue</span>
+          {% else %}
+            <span class="badge bg-warning text-dark">Due in {{ d.days_remaining }} day{{ d.days_remaining|pluralize }}</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if d.shipment.shipment_type == 'outbound' and d.shipment.sales_order %}
+            <a href="{% url 'so_detail' d.shipment.sales_order.pk %}" class="btn btn-sm btn-outline-primary">View SO</a>
+          {% elif d.shipment.purchase_order %}
+            <a href="{% url 'po_detail' d.shipment.purchase_order.pk %}" class="btn btn-sm btn-outline-secondary">View PO</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-success">
+  <i class="bi bi-check-circle-fill me-2"></i>
+  <strong>All shipments on track!</strong> No overdue or at-risk shipments detected.
+</div>
+{% endif %}
+
+{% if upcoming %}
+<div class="card">
+  <div class="card-body">
+    <h5 class="mb-3"><i class="bi bi-calendar-check me-2 text-primary"></i>Upcoming Deliveries</h5>
+    <table class="table table-sm">
+      <thead>
+        <tr><th>Tracking #</th><th>Carrier</th><th>Destination</th><th>Est. Delivery</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+      {% for s in upcoming %}
+      <tr>
+        <td>{{ s.tracking_number }}</td>
+        <td>{{ s.carrier }}</td>
+        <td>{{ s.destination }}</td>
+        <td>{{ s.estimated_delivery }}</td>
+        <td>
+          {% if s.status == 'in_transit' %}<span class="badge bg-info">In Transit</span>
+          {% elif s.status == 'out_for_delivery' %}<span class="badge bg-warning text-dark">Out for Delivery</span>
+          {% else %}<span class="badge bg-secondary">{{ s.get_status_display }}</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

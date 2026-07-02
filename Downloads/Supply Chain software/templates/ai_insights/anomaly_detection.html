@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Anomaly Detection – AI{% endblock %}
+{% block page_title %}Anomaly Detection{% endblock %}
+
+{% block content %}
+<p class="text-muted mb-4">Statistical z-score analysis flags order quantities that deviate significantly from historical norms.</p>
+
+{% if anomalies %}
+<div class="card">
+  <div class="card-body">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Product</th>
+          <th>Sales Order</th>
+          <th>Ordered Qty</th>
+          <th>Normal Range</th>
+          <th>Z-Score</th>
+          <th>Severity</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for a in anomalies %}
+      <tr class="{% if a.severity == 'High' %}table-danger{% else %}table-warning{% endif %}">
+        <td><i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>{{ a.type }}</td>
+        <td>
+          <strong>{{ a.product.name }}</strong><br>
+          <small class="text-muted">{{ a.product.sku }}</small>
+        </td>
+        <td>{{ a.order.so_number }}</td>
+        <td><span class="fw-bold text-danger fs-5">{{ a.quantity }}</span></td>
+        <td><span class="text-muted">{{ a.normal_range }}</span></td>
+        <td>
+          <span class="badge {% if a.severity == 'High' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+            z = {{ a.z_score }}
+          </span>
+        </td>
+        <td>
+          {% if a.severity == 'High' %}
+            <span class="badge bg-danger">High</span>
+          {% else %}
+            <span class="badge bg-warning text-dark">Medium</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-body">
+    <h6><i class="bi bi-info-circle me-2"></i>How Anomaly Detection Works</h6>
+    <p class="text-muted small mb-0">
+      For each product, we calculate the <strong>mean</strong> and <strong>standard deviation</strong> of all historical order quantities.
+      Any order where the quantity is more than <strong>2 standard deviations</strong> from the mean gets flagged.
+      A z-score above 3 is flagged as <span class="badge bg-danger">High</span> severity.
+    </p>
+  </div>
+</div>
+
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5">
+    <i class="bi bi-shield-check text-success" style="font-size:3rem"></i>
+    <h5 class="mt-3">No Anomalies Detected</h5>
+    <p class="text-muted">All recent order quantities are within normal statistical ranges.</p>
+    <small class="text-muted">Anomalies will appear here once you have multiple orders per product for comparison.</small>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

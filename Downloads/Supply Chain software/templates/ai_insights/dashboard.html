@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}AI Insights{% endblock %}
+{% block page_title %}AI Insights{% endblock %}
+
+{% block content %}
+<p class="text-muted mb-4">AI-powered analysis of your supply chain — no external APIs, runs entirely on your data.</p>
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <a href="{% url 'ai_smart_reorder' %}" class="text-decoration-none">
+      <div class="stat-card" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+        <div class="stat-icon"><i class="bi bi-arrow-repeat"></i></div>
+        <div class="stat-value">{{ reorder_count }}</div>
+        <div class="stat-label">Smart Reorder Alerts</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{% url 'ai_supplier_risk' %}" class="text-decoration-none">
+      <div class="stat-card" style="background:linear-gradient(135deg,#ef4444,#dc2626)">
+        <div class="stat-icon"><i class="bi bi-shield-exclamation"></i></div>
+        <div class="stat-value">{{ high_risk_count }}</div>
+        <div class="stat-label">High-Risk Suppliers</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{% url 'ai_anomaly_detection' %}" class="text-decoration-none">
+      <div class="stat-card" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed)">
+        <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="stat-value">{{ anomaly_count }}</div>
+        <div class="stat-label">Anomalies Detected</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <a href="{% url 'ai_delay_predictor' %}" class="text-decoration-none">
+      <div class="stat-card" style="background:linear-gradient(135deg,#06b6d4,#0891b2)">
+        <div class="stat-icon"><i class="bi bi-truck"></i></div>
+        <div class="stat-value">{{ delay_count }}</div>
+        <div class="stat-label">Shipment Delay Risks</div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Smart Reorder -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="section-header">
+          <h5><i class="bi bi-arrow-repeat text-warning me-2"></i>Smart Reorder Alerts</h5>
+          <a href="{% url 'ai_smart_reorder' %}" class="btn btn-sm btn-outline-warning">View All</a>
+        </div>
+        {% if reorder_alerts %}
+        <table class="table table-sm">
+          <thead><tr><th>Product</th><th>Stock</th><th>Days Left</th><th>Urgency</th></tr></thead>
+          <tbody>
+          {% for a in reorder_alerts %}
+          <tr>
+            <td>{{ a.product.name }}</td>
+            <td>{{ a.current_stock }}</td>
+            <td>{% if a.days_until_stockout >= 999 %}—{% else %}{{ a.days_until_stockout }}d{% endif %}</td>
+            <td>
+              {% if a.urgency == 'Critical' %}<span class="badge bg-danger">Critical</span>
+              {% elif a.urgency == 'High' %}<span class="badge bg-warning text-dark">High</span>
+              {% else %}<span class="badge bg-secondary">Medium</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}<p class="text-muted small">All stock levels are healthy.</p>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Supplier Risk -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="section-header">
+          <h5><i class="bi bi-shield-exclamation text-danger me-2"></i>Supplier Risk Scores</h5>
+          <a href="{% url 'ai_supplier_risk' %}" class="btn btn-sm btn-outline-danger">View All</a>
+        </div>
+        {% if supplier_risks %}
+        <table class="table table-sm">
+          <thead><tr><th>Supplier</th><th>Score</th><th>Risk</th></tr></thead>
+          <tbody>
+          {% for r in supplier_risks %}
+          <tr>
+            <td>{{ r.supplier.name }}</td>
+            <td>{{ r.score }}/100</td>
+            <td>
+              {% if r.risk_level == 'High' %}<span class="badge bg-danger">High</span>
+              {% elif r.risk_level == 'Medium' %}<span class="badge bg-warning text-dark">Medium</span>
+              {% else %}<span class="badge bg-success">Low</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}<p class="text-muted small">No supplier data yet.</p>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Anomalies -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="section-header">
+          <h5><i class="bi bi-graph-up-arrow text-purple me-2" style="color:#8b5cf6"></i>Anomalies</h5>
+          <a href="{% url 'ai_anomaly_detection' %}" class="btn btn-sm btn-outline-secondary">View All</a>
+        </div>
+        {% if anomalies %}
+        <table class="table table-sm">
+          <thead><tr><th>Product</th><th>Order</th><th>Qty</th><th>Normal</th></tr></thead>
+          <tbody>
+          {% for a in anomalies %}
+          <tr>
+            <td>{{ a.product.name }}</td>
+            <td>{{ a.order.so_number }}</td>
+            <td><span class="text-danger fw-bold">{{ a.quantity }}</span></td>
+            <td class="text-muted">{{ a.normal_range }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}<p class="text-muted small">No anomalies detected in recent orders.</p>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Delay Risks -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="section-header">
+          <h5><i class="bi bi-truck text-info me-2"></i>Shipment Delay Risks</h5>
+          <a href="{% url 'ai_delay_predictor' %}" class="btn btn-sm btn-outline-info">View All</a>
+        </div>
+        {% if delay_risks %}
+        <table class="table table-sm">
+          <thead><tr><th>Tracking</th><th>ETA</th><th>Status</th></tr></thead>
+          <tbody>
+          {% for d in delay_risks %}
+          <tr>
+            <td>{{ d.shipment.tracking_number }}</td>
+            <td>{{ d.shipment.estimated_delivery }}</td>
+            <td>
+              {% if d.days_overdue > 0 %}<span class="badge bg-danger">{{ d.days_overdue }}d overdue</span>
+              {% else %}<span class="badge bg-warning text-dark">Due soon</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}<p class="text-muted small">No shipment delay risks detected.</p>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
