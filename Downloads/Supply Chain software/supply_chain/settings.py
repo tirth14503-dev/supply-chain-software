@@ -8,7 +8,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-pto-%f+i7+k0v8cgxo&*)
 
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'tirthalkothari.com', 'www.tirthalkothari.com']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'tirthalkothari.pythonanywhere.com', 'tirthalkothari.com', 'www.tirthalkothari.com']
 ALLOWED_HOSTS += os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else []
 
 INSTALLED_APPS = [
@@ -88,6 +88,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CSRF_TRUSTED_ORIGINS = [
+    'https://tirthalkothari.pythonanywhere.com',
     'https://tirthalkothari.com',
     'https://www.tirthalkothari.com',
 ]
