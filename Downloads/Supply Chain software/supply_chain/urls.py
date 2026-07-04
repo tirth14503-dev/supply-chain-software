@@ -4,6 +4,7 @@ from dashboard.views import dashboard, finance_report
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('accounts/', include('accounts.urls')),
     path('', dashboard, name='dashboard'),
     path('inventory/', include('inventory.urls')),
     path('suppliers/', include('suppliers.urls')),
