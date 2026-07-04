@@ -47,6 +47,10 @@ class Product(models.Model):
     def is_low_stock(self):
         return self.total_stock <= self.reorder_point
 
+    @property
+    def stock_value(self):
+        return self.total_stock * float(self.unit_price)
+
 
 class Stock(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -59,3 +63,27 @@ class Stock(models.Model):
 
     def __str__(self):
         return f'{self.product.name} @ {self.warehouse.name}: {self.quantity}'
+
+
+class StockMovement(models.Model):
+    MOVEMENT_TYPE = [
+        ('in', 'Stock In'),
+        ('out', 'Stock Out'),
+        ('adjustment', 'Adjustment'),
+    ]
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='movements')
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='movements')
+    movement_type = models.CharField(max_length=20, choices=MOVEMENT_TYPE)
+    quantity = models.IntegerField()  # positive = in, negative = out
+    reference_type = models.CharField(max_length=50, blank=True)  # 'PO', 'SO', 'Manual'
+    reference_number = models.CharField(max_length=100, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.CharField(max_length=100, blank=True, default='System')
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        sign = '+' if self.quantity > 0 else ''
+        return f'{sign}{self.quantity} {self.product.name} @ {self.warehouse.name}'

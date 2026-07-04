@@ -11,4 +11,5 @@ urlpatterns = [
     path('warehouses/', views.warehouse_list, name='warehouse_list'),
     path('warehouses/new/', views.warehouse_create, name='warehouse_create'),
     path('warehouses/<int:pk>/edit/', views.warehouse_edit, name='warehouse_edit'),
+    path('ledger/', views.stock_ledger, name='stock_ledger'),
 ]

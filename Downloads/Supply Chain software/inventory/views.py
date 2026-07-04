@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db.models import Q
-from .models import Product, Category, Warehouse, Stock
+from .models import Product, Category, Warehouse, Stock, StockMovement
 
 
 def product_list(request):
@@ -105,10 +105,43 @@ def stock_adjust(request, product_pk):
     warehouses = Warehouse.objects.all()
     if request.method == 'POST':
         warehouse_id = request.POST['warehouse']
-        quantity = int(request.POST['quantity'])
-        stock, _ = Stock.objects.get_or_create(product=product, warehouse_id=warehouse_id)
-        stock.quantity = quantity
+        new_qty = int(request.POST['quantity'])
+        notes = request.POST.get('notes', '')
+        stock, _ = Stock.objects.get_or_create(product=product, warehouse_id=warehouse_id, defaults={'quantity': 0})
+        diff = new_qty - stock.quantity
+        stock.quantity = new_qty
         stock.save()
-        messages.success(request, 'Stock updated.')
+        if diff != 0:
+            StockMovement.objects.create(
+                product=product,
+                warehouse_id=warehouse_id,
+                movement_type='adjustment',
+                quantity=diff,
+                reference_type='Manual',
+                reference_number='',
+                notes=notes or f'Manual adjustment → {new_qty}',
+                created_by=str(request.user),
+            )
+        messages.success(request, 'Stock updated and movement logged.')
         return redirect('product_detail', pk=product_pk)
     return render(request, 'inventory/stock_adjust.html', {'product': product, 'warehouses': warehouses})
+
+
+def stock_ledger(request):
+    qs = StockMovement.objects.select_related('product', 'warehouse').all()
+    product_id = request.GET.get('product')
+    warehouse_id = request.GET.get('warehouse')
+    if product_id:
+        qs = qs.filter(product_id=product_id)
+    if warehouse_id:
+        qs = qs.filter(warehouse_id=warehouse_id)
+    movements = qs[:200]
+    products = Product.objects.all()
+    warehouses = Warehouse.objects.all()
+    return render(request, 'inventory/stock_ledger.html', {
+        'movements': movements,
+        'products': products,
+        'warehouses': warehouses,
+        'selected_product': product_id,
+        'selected_warehouse': warehouse_id,
+    })

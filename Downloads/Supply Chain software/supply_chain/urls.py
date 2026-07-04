@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from dashboard.views import dashboard
+from dashboard.views import dashboard, finance_report
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -10,4 +10,5 @@ urlpatterns = [
     path('orders/', include('orders.urls')),
     path('shipments/', include('shipments.urls')),
     path('ai/', include('ai_insights.urls')),
+    path('finance/', finance_report, name='finance_report'),
 ]

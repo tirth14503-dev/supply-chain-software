@@ -77,7 +77,8 @@ def _anomalies():
         if len(qtys) < 2:
             continue
         mean = sum(qtys) / len(qtys)
-        std = (sum((q - mean) ** 2 for q in qtys) / len(qtys)) ** 0.5
+        # Bessel's correction: divide by N-1 for unbiased sample std dev
+        std = (sum((q - mean) ** 2 for q in qtys) / (len(qtys) - 1)) ** 0.5
         if std == 0:
             continue
         for item in SalesOrderItem.objects.filter(product=product).select_related('order').order_by('-id')[:10]:
@@ -104,7 +105,7 @@ def _delay_risks():
                           'days_overdue': (today - s.estimated_delivery).days,
                           'days_remaining': None,
                           'severity': 'High' if (today - s.estimated_delivery).days > 3 else 'Medium'})
-        elif (s.estimated_delivery - today).days <= 1:
+        elif (s.estimated_delivery - today).days <= 3:
             risks.append({'shipment': s, 'days_overdue': 0,
                           'days_remaining': (s.estimated_delivery - today).days,
                           'severity': 'Medium'})
@@ -148,7 +149,8 @@ def demand_forecast(request):
         avg = sum(monthly) / 6 if sum(monthly) else product.reorder_point * 0.5
         first3 = sum(monthly[:3]) / 3
         last3 = sum(monthly[3:]) / 3
-        trend = ((last3 - first3) / max(first3, 1)) * 100 if first3 else 0
+        # Use 0.1 as floor so fractional demand (e.g. 0.5/mo) isn't distorted
+        trend = ((last3 - first3) / max(first3, 0.1)) * 100 if sum(monthly) else 0
         forecast_qty = max(0, int(avg * (1 + trend / 100)))
         stock = product.total_stock
         forecasts.append({

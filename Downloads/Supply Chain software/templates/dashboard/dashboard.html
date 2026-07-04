@@ -44,6 +44,49 @@
 
 <style>.col-lg-2-4 { flex: 0 0 auto; width: 20%; } @media(max-width:991px){.col-lg-2-4{width:50%;}}</style>
 
+<!-- Financial KPIs -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:rgba(16,185,129,.15)">
+          <i class="bi bi-currency-dollar fs-4 text-success"></i>
+        </div>
+        <div>
+          <div class="text-muted small">Inventory Value</div>
+          <div class="fw-bold fs-5">${{ inv_value|floatformat:0 }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:rgba(78,154,241,.15)">
+          <i class="bi bi-receipt fs-4 text-primary"></i>
+        </div>
+        <div>
+          <div class="text-muted small">Revenue MTD</div>
+          <div class="fw-bold fs-5">${{ revenue_mtd|floatformat:0 }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;background:rgba(139,92,246,.15)">
+          <i class="bi bi-percent fs-4 text-purple" style="color:#8b5cf6"></i>
+        </div>
+        <div>
+          <div class="text-muted small">Gross Margin MTD</div>
+          <div class="fw-bold fs-5">{{ gross_margin }}%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="row g-3 mb-4">
   <!-- Sales Order Status Chart -->
   <div class="col-md-5">

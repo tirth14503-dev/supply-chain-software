@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Stock Ledger – SupplyChain Pro{% endblock %}
+{% block page_title %}Stock Ledger{% endblock %}
+
+{% block content %}
+<p class="text-muted mb-4">Full audit trail of every stock movement — inbound POs, outbound SOs, and manual adjustments.</p>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label">Product</label>
+        <select name="product" class="form-select form-select-sm">
+          <option value="">All Products</option>
+          {% for p in products %}
+            <option value="{{ p.pk }}" {% if selected_product == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Warehouse</label>
+        <select name="warehouse" class="form-select form-select-sm">
+          <option value="">All Warehouses</option>
+          {% for w in warehouses %}
+            <option value="{{ w.pk }}" {% if selected_warehouse == w.pk|stringformat:"s" %}selected{% endif %}>{{ w.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-auto">
+        <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+        <a href="{% url 'stock_ledger' %}" class="btn btn-sm btn-outline-secondary ms-1">Clear</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Ledger Table -->
+<div class="card">
+  <div class="card-body p-0">
+    {% if movements %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Date & Time</th>
+            <th>Type</th>
+            <th>Product</th>
+            <th>Warehouse</th>
+            <th class="text-end">Qty Change</th>
+            <th>Reference</th>
+            <th>Notes</th>
+            <th>By</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for m in movements %}
+        <tr>
+          <td class="small text-muted text-nowrap">{{ m.created_at|date:"d M Y H:i" }}</td>
+          <td>
+            {% if m.movement_type == 'in' %}
+              <span class="badge bg-success"><i class="bi bi-arrow-down-circle me-1"></i>Stock In</span>
+            {% elif m.movement_type == 'out' %}
+              <span class="badge bg-danger"><i class="bi bi-arrow-up-circle me-1"></i>Stock Out</span>
+            {% else %}
+              <span class="badge bg-secondary"><i class="bi bi-pencil me-1"></i>Adjustment</span>
+            {% endif %}
+          </td>
+          <td>
+            <strong>{{ m.product.name }}</strong><br>
+            <small class="text-muted">{{ m.product.sku }}</small>
+          </td>
+          <td class="small">{{ m.warehouse.name }}</td>
+          <td class="text-end fw-bold {% if m.quantity > 0 %}text-success{% else %}text-danger{% endif %}">
+            {% if m.quantity > 0 %}+{% endif %}{{ m.quantity }}
+          </td>
+          <td>
+            {% if m.reference_type %}
+              <span class="badge bg-light text-dark border">{{ m.reference_type }}</span>
+              <small>{{ m.reference_number }}</small>
+            {% else %}—{% endif %}
+          </td>
+          <td class="small text-muted">{{ m.notes|default:"—" }}</td>
+          <td class="small">{{ m.created_by|default:"System" }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-journal-x fs-1 mb-3 d-block"></i>
+      <h6>No stock movements recorded yet</h6>
+      <p class="small">Movements are logged automatically when POs are received, SOs are shipped, or stock is manually adjusted.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if movements %}
+<p class="text-muted small mt-2">Showing latest {{ movements|length }} movements. Use filters to narrow results.</p>
+{% endif %}
+{% endblock %}
