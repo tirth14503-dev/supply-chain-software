@@ -22,10 +22,30 @@
           <tr><th class="text-muted fw-normal">Added</th><td>{{ product.created_at|date:"d M Y" }}</td></tr>
         </table>
         {% if product.description %}<hr><p class="text-muted small mb-0">{{ product.description }}</p>{% endif %}
-        <div class="mt-3 d-flex gap-2">
+        <div class="mt-3 d-flex gap-2 flex-wrap">
           <a href="{% url 'product_edit' product.pk %}" class="btn btn-sm btn-primary"><i class="bi bi-pencil me-1"></i>Edit</a>
           <a href="{% url 'stock_adjust' product.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-boxes me-1"></i>Adjust Stock</a>
+          <a href="{% url 'barcode_print' product.pk %}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer me-1"></i>Print Label</a>
           <a href="{% url 'product_delete' product.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barcode Card -->
+    <div class="card mt-3">
+      <div class="card-body text-center py-3">
+        <h6 class="fw-semibold mb-3"><i class="bi bi-upc-scan me-2"></i>Barcode</h6>
+        <svg id="barcodeImg" class="d-block mx-auto"></svg>
+        <div class="text-muted small mt-2">
+          {% if product.barcode %}{{ product.barcode }}{% else %}{{ product.sku }}{% endif %}
+        </div>
+        <div class="mt-2 d-flex gap-2 justify-content-center">
+          <a href="{% url 'barcode_print' product.pk %}" target="_blank" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-printer me-1"></i>Print Labels
+          </a>
+          <a href="{% url 'barcode_scan' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-camera me-1"></i>Scan
+          </a>
         </div>
       </div>
     </div>
@@ -55,4 +75,15 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script>
+try {
+  JsBarcode('#barcodeImg', '{{ product.barcode|default:product.sku }}', {
+    format: 'CODE128', width: 2, height: 60, displayValue: false, margin: 4,
+  });
+} catch(e) {}
+</script>
 {% endblock %}

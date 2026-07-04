@@ -62,6 +62,9 @@
     <a href="{% url 'warehouse_list' %}" class="nav-link {% if 'warehouse' in request.resolver_match.url_name %}active{% endif %}">
       <i class="bi bi-building"></i> Warehouses
     </a>
+    <a href="{% url 'barcode_scan' %}" class="nav-link {% if request.resolver_match.url_name == 'barcode_scan' %}active{% endif %}" style="color:#f59e0b">
+      <i class="bi bi-upc-scan"></i> Scan Barcode
+    </a>
 
     <div class="nav-section mt-2">Procurement</div>
     <a href="{% url 'supplier_list' %}" class="nav-link {% if 'supplier' in request.resolver_match.url_name %}active{% endif %}">

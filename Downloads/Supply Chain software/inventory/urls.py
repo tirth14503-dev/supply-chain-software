@@ -12,4 +12,7 @@ urlpatterns = [
     path('warehouses/new/', views.warehouse_create, name='warehouse_create'),
     path('warehouses/<int:pk>/edit/', views.warehouse_edit, name='warehouse_edit'),
     path('ledger/', views.stock_ledger, name='stock_ledger'),
+    path('scan/', views.barcode_scan, name='barcode_scan'),
+    path('api/lookup/', views.product_lookup, name='product_lookup'),
+    path('products/<int:pk>/barcode/', views.barcode_print, name='barcode_print'),
 ]

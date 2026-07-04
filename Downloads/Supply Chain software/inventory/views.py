@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db.models import Q
+from django.http import JsonResponse
 from .models import Product, Category, Warehouse, Stock, StockMovement
 
 
@@ -33,7 +34,8 @@ def product_create(request):
             description=request.POST.get('description', ''),
             unit_price=request.POST['unit_price'],
             unit=request.POST.get('unit', 'pcs'),
-            reorder_point=request.POST.get('reorder_point', 10)
+            reorder_point=request.POST.get('reorder_point', 10),
+            barcode=request.POST.get('barcode', ''),
         )
         messages.success(request, f'Product "{product.name}" created.')
         return redirect('product_list')
@@ -51,6 +53,7 @@ def product_edit(request, pk):
         product.unit_price = request.POST['unit_price']
         product.unit = request.POST.get('unit', 'pcs')
         product.reorder_point = request.POST.get('reorder_point', 10)
+        product.barcode = request.POST.get('barcode', '')
         product.save()
         messages.success(request, f'Product "{product.name}" updated.')
         return redirect('product_detail', pk=pk)
@@ -144,4 +147,58 @@ def stock_ledger(request):
         'warehouses': warehouses,
         'selected_product': product_id,
         'selected_warehouse': warehouse_id,
+    })
+
+
+def barcode_scan(request):
+    return render(request, 'inventory/barcode_scan.html')
+
+
+def product_lookup(request):
+    code = request.GET.get('code', '').strip()
+    if not code:
+        return JsonResponse({'found': False, 'error': 'No code provided'})
+
+    product = (
+        Product.objects.filter(barcode=code).first()
+        or Product.objects.filter(sku__iexact=code).first()
+        or Product.objects.filter(name__iexact=code).first()
+    )
+
+    if not product:
+        return JsonResponse({'found': False, 'code': code})
+
+    stocks = list(Stock.objects.filter(product=product).select_related('warehouse'))
+    return JsonResponse({
+        'found': True,
+        'id': product.pk,
+        'sku': product.sku,
+        'name': product.name,
+        'barcode': product.barcode or product.sku,
+        'category': product.category.name if product.category else '',
+        'unit_price': float(product.unit_price),
+        'unit': product.unit,
+        'total_stock': product.total_stock,
+        'is_low_stock': product.is_low_stock,
+        'reorder_point': product.reorder_point,
+        'stock_value': product.stock_value,
+        'detail_url': f'/inventory/products/{product.pk}/',
+        'adjust_url': f'/inventory/products/{product.pk}/stock/',
+        'print_url': f'/inventory/products/{product.pk}/barcode/',
+        'stocks': [
+            {'warehouse': s.warehouse.name, 'location': s.warehouse.location, 'quantity': s.quantity}
+            for s in stocks
+        ],
+    })
+
+
+def barcode_print(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    barcode_value = product.barcode or product.sku
+    copies = int(request.GET.get('copies', 1))
+    return render(request, 'inventory/barcode_print.html', {
+        'product': product,
+        'barcode_value': barcode_value,
+        'copies': range(copies),
+        'copies_count': copies,
     })

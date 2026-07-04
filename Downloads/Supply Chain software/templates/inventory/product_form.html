@@ -37,6 +37,14 @@
           <label class="form-label">Reorder Point</label>
           <input type="number" name="reorder_point" value="{{ product.reorder_point|default:'10' }}" class="form-control">
         </div>
+        <div class="col-md-8">
+          <label class="form-label">Barcode / EAN / UPC <small class="text-muted">(optional)</small></label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
+            <input type="text" name="barcode" value="{{ product.barcode|default:'' }}" class="form-control" placeholder="Leave blank to use SKU as barcode">
+          </div>
+          <div class="form-text">Supports EAN-13, Code 128, QR, etc.</div>
+        </div>
         <div class="col-12">
           <label class="form-label">Description</label>
           <textarea name="description" class="form-control" rows="3">{{ product.description|default:'' }}</textarea>

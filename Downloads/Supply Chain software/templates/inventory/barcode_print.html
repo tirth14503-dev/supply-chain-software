@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Barcode Label – {{ product.name }}</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
+    .controls { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.1); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .controls label { font-size: .85rem; color: #666; }
+    .controls input { border: 1px solid #ddd; border-radius: 4px; padding: 4px 8px; width: 60px; }
+    .btn { padding: 8px 20px; border-radius: 6px; border: none; cursor: pointer; font-size: .9rem; font-weight: 500; }
+    .btn-primary { background: #4e9af1; color: #fff; }
+    .btn-secondary { background: #e5e7eb; color: #374151; }
+    .label-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+    .label { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px;
+      padding: 12px 16px; text-align: center; width: 220px; }
+    .label .product-name { font-size: .8rem; font-weight: 600; color: #1a1f36;
+      margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .label .sku { font-size: .7rem; color: #6b7280; margin-bottom: 8px; font-family: monospace; }
+    .label svg { max-width: 100%; height: auto; }
+    .label .code-text { font-size: .7rem; color: #374151; margin-top: 4px; letter-spacing: 2px; font-family: monospace; }
+    .label .price { font-size: .75rem; color: #10b981; font-weight: 600; margin-top: 4px; }
+    @media print {
+      .controls { display: none !important; }
+      body { background: #fff; padding: 0; }
+      .label { border: 1px solid #ccc; break-inside: avoid; }
+      .label-grid { gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="controls">
+  <div>
+    <label>Copies</label><br>
+    <input type="number" id="copiesInput" value="{{ copies_count }}" min="1" max="100" onchange="updateCopies()">
+  </div>
+  <div>
+    <label>Format</label><br>
+    <select id="formatSelect" onchange="renderAll()" style="border:1px solid #ddd;border-radius:4px;padding:4px 8px">
+      <option value="CODE128">Code 128 (recommended)</option>
+      <option value="EAN13">EAN-13</option>
+      <option value="EAN8">EAN-8</option>
+      <option value="UPC">UPC-A</option>
+      <option value="CODE39">Code 39</option>
+    </select>
+  </div>
+  <div style="margin-left:auto;display:flex;gap:8px">
+    <button class="btn btn-secondary" onclick="window.close()">← Back</button>
+    <button class="btn btn-primary" onclick="window.print()">🖨 Print Labels</button>
+  </div>
+</div>
+
+<div class="label-grid" id="labelGrid"></div>
+
+<script>
+const product = {
+  name: {{ product.name|escapejs|safe|stringformat:"s" }},
+  sku: "{{ product.sku }}",
+  barcode: "{{ barcode_value }}",
+  price: "${{ product.unit_price }}"
+};
+
+// escapejs doesn't work inline like that — use data attributes instead
+</script>
+
+<div id="productData"
+  data-name="{{ product.name|escapejs }}"
+  data-sku="{{ product.sku }}"
+  data-barcode="{{ barcode_value }}"
+  data-price="${{ product.unit_price }}"
+  style="display:none"></div>
+
+<script>
+const el = document.getElementById('productData');
+const prod = {
+  name: el.dataset.name,
+  sku: el.dataset.sku,
+  barcode: el.dataset.barcode,
+  price: el.dataset.price,
+};
+
+function renderAll() {
+  const count = parseInt(document.getElementById('copiesInput').value) || 1;
+  const format = document.getElementById('formatSelect').value;
+  const grid = document.getElementById('labelGrid');
+  grid.innerHTML = '';
+
+  for (let i = 0; i < count; i++) {
+    const div = document.createElement('div');
+    div.className = 'label';
+
+    const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svgEl.setAttribute('class', 'barcode-svg');
+
+    div.innerHTML = `
+      <div class="product-name">${prod.name}</div>
+      <div class="sku">${prod.sku}</div>
+    `;
+    div.appendChild(svgEl);
+    div.innerHTML += `<div class="code-text">${prod.barcode}</div><div class="price">${prod.price}</div>`;
+    div.appendChild(svgEl);
+
+    // re-attach svg since innerHTML replaces it
+    const label = document.createElement('div');
+    label.className = 'label';
+    const svg2 = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+
+    label.innerHTML = `
+      <div class="product-name">${prod.name}</div>
+      <div class="sku">${prod.sku}</div>
+    `;
+    label.appendChild(svg2);
+    const codeDiv = document.createElement('div');
+    codeDiv.className = 'code-text';
+    codeDiv.textContent = prod.barcode;
+    const priceDiv = document.createElement('div');
+    priceDiv.className = 'price';
+    priceDiv.textContent = prod.price;
+    label.appendChild(codeDiv);
+    label.appendChild(priceDiv);
+    grid.appendChild(label);
+
+    try {
+      JsBarcode(svg2, prod.barcode, {
+        format: format,
+        width: 2,
+        height: 60,
+        displayValue: false,
+        margin: 4,
+      });
+    } catch(e) {
+      // fallback to CODE128 if format fails (e.g. EAN13 needs exactly 12 digits)
+      try {
+        JsBarcode(svg2, prod.barcode, { format: 'CODE128', width: 2, height: 60, displayValue: false, margin: 4 });
+        document.getElementById('formatSelect').value = 'CODE128';
+      } catch(e2) {
+        svg2.innerHTML = `<text x="50%" y="50%" text-anchor="middle" fill="red" font-size="12">Invalid barcode for format</text>`;
+      }
+    }
+  }
+}
+
+function updateCopies() { renderAll(); }
+
+renderAll();
+</script>
+</body>
+</html>

@@ -32,8 +32,10 @@ class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
     description = models.TextField(blank=True)
     unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+    cost_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     unit = models.CharField(max_length=30, default='pcs')
     reorder_point = models.PositiveIntegerField(default=10)
+    barcode = models.CharField(max_length=100, blank=True, default='', help_text='EAN/UPC barcode (leave blank to use SKU)')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
