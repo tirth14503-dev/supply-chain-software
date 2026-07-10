@@ -8,6 +8,8 @@ from shipments.models import Shipment
 from datetime import timedelta
 import json
 
+from .ml import predict
+
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -24,7 +26,8 @@ def _reorder_alerts():
         avg_daily = sold / 30 if sold else 0.5
         days_out = int(stock / avg_daily) if avg_daily else 999
         if stock <= product.reorder_point or days_out <= 14:
-            rec_qty = max(int(avg_daily * 30), product.reorder_point * 2, 10)
+            forecast = predict.predict_demand(product)
+            rec_qty = max(forecast or int(avg_daily * 30), product.reorder_point * 2, 10)
             urgency = ('Critical' if days_out <= 3 or stock == 0
                        else 'High' if days_out <= 7 else 'Medium')
             alerts.append({
@@ -41,28 +44,51 @@ def _reorder_alerts():
 def _supplier_risks():
     risks = []
     for s in Supplier.objects.all():
-        score, factors = 100, []
+        # human-readable contributing factors, shown regardless of scoring method
+        factors = []
         if s.status == 'blacklisted':
-            score -= 50; factors.append('Blacklisted supplier')
+            factors.append('Blacklisted supplier')
         elif s.status == 'inactive':
-            score -= 20; factors.append('Inactive supplier')
+            factors.append('Inactive supplier')
         if s.rating < 3:
-            score -= 25; factors.append(f'Low rating ({s.rating}/5)')
+            factors.append(f'Low rating ({s.rating}/5)')
         elif s.rating < 4:
-            score -= 10; factors.append(f'Below-avg rating ({s.rating}/5)')
+            factors.append(f'Below-avg rating ({s.rating}/5)')
         if s.lead_time_days > 21:
-            score -= 20; factors.append(f'Very long lead time ({s.lead_time_days}d)')
+            factors.append(f'Very long lead time ({s.lead_time_days}d)')
         elif s.lead_time_days > 14:
-            score -= 10; factors.append(f'Long lead time ({s.lead_time_days}d)')
+            factors.append(f'Long lead time ({s.lead_time_days}d)')
         total = PurchaseOrder.objects.filter(supplier=s).count()
         cancelled = PurchaseOrder.objects.filter(supplier=s, status='cancelled').count()
-        if total:
-            rate = cancelled / total * 100
+        rate = (cancelled / total * 100) if total else 0
+        if rate > 30:
+            factors.append(f'High cancellation rate ({rate:.0f}%)')
+        elif rate > 10:
+            factors.append(f'Elevated cancellation rate ({rate:.0f}%)')
+
+        risk_proba = predict.predict_supplier_risk(s)
+        if risk_proba is not None:
+            score = max(0, min(100, round((1 - risk_proba) * 100)))
+        else:
+            score = 100
+            if s.status == 'blacklisted':
+                score -= 50
+            elif s.status == 'inactive':
+                score -= 20
+            if s.rating < 3:
+                score -= 25
+            elif s.rating < 4:
+                score -= 10
+            if s.lead_time_days > 21:
+                score -= 20
+            elif s.lead_time_days > 14:
+                score -= 10
             if rate > 30:
-                score -= 20; factors.append(f'High cancellation rate ({rate:.0f}%)')
+                score -= 20
             elif rate > 10:
-                score -= 10; factors.append(f'Elevated cancellation rate ({rate:.0f}%)')
-        score = max(0, score)
+                score -= 10
+            score = max(0, score)
+
         level = 'Low' if score >= 75 else 'Medium' if score >= 50 else 'High'
         risks.append({'supplier': s, 'score': score, 'risk_level': level,
                       'risk_factors': factors, 'total_pos': total})
@@ -72,8 +98,7 @@ def _supplier_risks():
 def _anomalies():
     anomalies = []
     for product in Product.objects.all():
-        qtys = list(SalesOrderItem.objects.filter(product=product)
-                    .values_list('quantity', flat=True))
+        qtys = list(SalesOrderItem.objects.filter(product=product).values_list('quantity', flat=True))
         if len(qtys) < 2:
             continue
         mean = sum(qtys) / len(qtys)
@@ -82,15 +107,24 @@ def _anomalies():
         if std == 0:
             continue
         for item in SalesOrderItem.objects.filter(product=product).select_related('order').order_by('-id')[:10]:
-            z = abs(item.quantity - mean) / std
-            if z > 2:
-                anomalies.append({
-                    'type': 'Unusual Order Quantity', 'product': product,
-                    'order': item.order, 'quantity': item.quantity,
-                    'normal_range': f'{max(0,int(mean-2*std))}–{int(mean+2*std)}',
-                    'severity': 'High' if z > 3 else 'Medium',
-                    'z_score': round(z, 2),
-                })
+            result = predict.score_anomaly(product.id, item.quantity)
+            if result is not None:
+                is_anomaly, score, z = result
+                if not is_anomaly:
+                    continue
+                severity = 'High' if score < -0.15 else 'Medium'
+            else:
+                z = abs(item.quantity - mean) / std
+                if z <= 2:
+                    continue
+                severity = 'High' if z > 3 else 'Medium'
+            anomalies.append({
+                'type': 'Unusual Order Quantity', 'product': product,
+                'order': item.order, 'quantity': item.quantity,
+                'normal_range': f'{max(0,int(mean-2*std))}–{int(mean+2*std)}',
+                'severity': severity,
+                'z_score': round(z, 2),
+            })
     return anomalies
 
 
@@ -109,6 +143,12 @@ def _delay_risks():
             risks.append({'shipment': s, 'days_overdue': 0,
                           'days_remaining': (s.estimated_delivery - today).days,
                           'severity': 'Medium'})
+        else:
+            proba = predict.predict_delay_probability(s)
+            if proba is not None and proba >= 0.4:
+                risks.append({'shipment': s, 'days_overdue': 0,
+                              'days_remaining': (s.estimated_delivery - today).days,
+                              'severity': 'High' if proba >= 0.6 else 'Medium'})
     return risks
 
 
@@ -151,7 +191,9 @@ def demand_forecast(request):
         last3 = sum(monthly[3:]) / 3
         # Use 0.1 as floor so fractional demand (e.g. 0.5/mo) isn't distorted
         trend = ((last3 - first3) / max(first3, 0.1)) * 100 if sum(monthly) else 0
-        forecast_qty = max(0, int(avg * (1 + trend / 100)))
+
+        ml_forecast = predict.predict_demand(product)
+        forecast_qty = ml_forecast if ml_forecast is not None else max(0, int(avg * (1 + trend / 100)))
         stock = product.total_stock
         forecasts.append({
             'product': product,
